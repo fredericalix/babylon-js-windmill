@@ -2,10 +2,13 @@
   "name": "babylon-js-windmill",
   "version": "1.0.0",
   "description": "A 3D viewer application built with Babylon.js to display a windmill 3D model.",
-  "main": "app.js",
+  "main": "dist/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "start": "npm run build && node server.js",
+    "dev": "concurrently \"npm run watch\" \"node server.js\""
   },
   "keywords": [],
   "author": "",
@@ -13,5 +16,17 @@
   "dependencies": {
     "dotenv": "^16.5.0",
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^8.3.1",
+    "@babylonjs/inspector": "^8.3.1",
+    "@babylonjs/loaders": "^8.3.1",
+    "@types/node": "^22.14.1",
+    "concurrently": "^9.1.2",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "webpack": "^5.99.6",
+    "webpack-cli": "^6.0.1"
   }
 }
