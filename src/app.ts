@@ -169,22 +169,26 @@ const createScene = function(): BABYLON.Scene {
     
     // --- Skybox Setup ---
 
-    // Create a large box to serve as the skybox
-    const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 1000.0 }, scene);
-    // Create a standard material for the skybox
+    // Instead of using a texture-based skybox that requires external files,
+    // we'll create a simple color gradient for the scene background
+    
+    // Set the scene clear color to a light blue gradient
+    scene.clearColor = new BABYLON.Color4(0.4, 0.6, 0.9, 1.0);
+    
+    // Create a simple skybox dome with a gradient material
     const skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
-    // Ensure the skybox texture is visible from the inside
     skyboxMaterial.backFaceCulling = false;
-    // Load a cube texture for the skybox background
-    // Replace URL with your desired skybox texture
-    skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("https://assets.babylonjs.com/skyboxes/skybox", scene);
-    // Set the texture coordinates mode to SKYBOX_MODE for correct mapping
-    skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
-    // Set diffuse and specular colors to black to avoid unwanted lighting effects on the skybox itself
-    skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-    skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-    // Assign the material to the skybox mesh
+    skyboxMaterial.disableLighting = true;
+    
+    // Use emissive color for a solid color that's not affected by lighting
+    skyboxMaterial.emissiveColor = new BABYLON.Color3(0.4, 0.6, 0.9);
+    
+    // Create a dome instead of a box for a more natural sky appearance
+    const skybox = BABYLON.MeshBuilder.CreateSphere("skyBox", { diameter: 1000, segments: 32 }, scene);
     skybox.material = skyboxMaterial;
+    
+    // Invert the dome so we see it from the inside
+    skybox.scaling.y = -1;
     
     // --- Model Loading and Positioning ---
 
