@@ -192,27 +192,86 @@ const createScene = function(): BABYLON.Scene {
     
     // --- Model Loading and Positioning ---
 
-    // Variable to store the base mesh once loaded
-    let baseMesh: BABYLON.AbstractMesh | null = null;
+    // Variables to store the base meshes
+    let centralBaseMesh: BABYLON.AbstractMesh | null = null;
+    let baseMeshes: BABYLON.AbstractMesh[] = [];
+    
+    // Function to calculate the position of a hexagon tile at a given grid coordinate
+    // Using axial coordinates (q,r) for hexagonal grid positioning
+    // See: https://www.redblobgames.com/grids/hexagons/ for detailed explanation
+    const getHexPosition = (q: number, r: number, size: number, height: number): BABYLON.Vector3 => {
+        // For a pointy-top hexagon layout:
+        const x = size * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r);
+        const z = size * (3/2 * r);
+        return new BABYLON.Vector3(x, height, z);
+    };
     
     // Load the base model first (e.g., grass hexagon)
     BABYLON.SceneLoader.ImportMeshAsync("", "assets/", "hex_grass_bottom.gltf", scene).then((baseResult) => {
-        // Assign the first mesh in the result (usually the root) to baseMesh
-        baseMesh = baseResult.meshes[0];
+        // Create a parent node for all hex tiles to make management easier
+        const hexParent = new BABYLON.TransformNode("hexParent", scene);
         
-        // Log the names of all loaded meshes for debugging
-        console.log("Base meshes:", baseResult.meshes.map(mesh => mesh.name));
+        // Define the hexagonal grid coordinates for our island
+        // Format: [q, r] in axial coordinates
+        // (0,0) is the center tile where the windmill will be placed
+        const hexCoords = [
+            [0, 0],   // Center tile
+            [1, 0],   // East
+            [0, 1],   // Southeast
+            [-1, 1],  // Southwest
+            [-1, 0],  // West
+            [0, -1],  // Northwest
+            [1, -1],  // Northeast
+            // Add a second ring of hexagons for a larger island
+            [2, 0],   // Far East
+            [2, -1],  // East-Northeast
+            [2, -2],  // Northeast-Northeast
+            [1, -2],  // Far Northeast
+            [0, -2],  // Far Northwest
+            [-1, -1], // Northwest-Northwest
+            [-2, 0],  // Far West
+            [-2, 1],  // West-Southwest
+            [-2, 2],  // Southwest-Southwest
+            [-1, 2],  // Far Southwest
+            [0, 2],   // Far Southeast
+            [1, 1]    // Southeast-Southeast
+        ];
         
-        // --- Positioning and Scaling the Base ---
-        // Scale the base mesh (adjust values as needed)
-        baseMesh.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
-
-        // Position the base mesh
-        // Adjust Y value to raise or lower the base relative to the ground plane (0,0,0)
-        baseMesh.position = new BABYLON.Vector3(0, 0.3, 0); // Example: slightly above ground
-
+        // Clone the base mesh for each hex coordinate
+        const hexSize = 1.0;  // Size factor for positioning
+        const hexHeight = 0.3; // Height offset from ground
+        
+        // Get the root mesh from the loaded model
+        const originalMesh = baseResult.meshes[0];
+        originalMesh.setEnabled(false); // Hide the original mesh, we'll use clones
+        
+        // Create all the hex tiles
+        hexCoords.forEach(([q, r], index) => {
+            // Clone the original mesh
+            const hexClone = originalMesh.clone(`hex_${q}_${r}`, hexParent);
+            if (hexClone) {
+                // Scale the hex tile
+                hexClone.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
+                
+                // Position according to hex grid coordinates
+                const position = getHexPosition(q, r, hexSize, hexHeight);
+                hexClone.position = position;
+                
+                // Enable the clone
+                hexClone.setEnabled(true);
+                
+                // Add to our array of base meshes
+                baseMeshes.push(hexClone);
+                
+                // If this is the center tile (0,0), store it separately
+                if (q === 0 && r === 0) {
+                    centralBaseMesh = hexClone;
+                }
+            }
+        });
+        
         // Log confirmation of base model loading
-        console.log("Base model loaded successfully");
+        console.log("Hexagonal island created with", baseMeshes.length, "tiles");
         
         // Chain the loading of the windmill model after the base is loaded
         return BABYLON.SceneLoader.ImportMeshAsync("", "assets/", "building_windmill_blue.gltf", scene);
@@ -226,20 +285,20 @@ const createScene = function(): BABYLON.Scene {
         console.log("Windmill meshes:", result.meshes.map(mesh => mesh.name));
 
         // --- Parenting the Windmill to the Base ---
-        // Check if the base mesh was loaded successfully
-        if (baseMesh) {
-            // Set the base mesh as the parent of the windmill's root mesh
+        // Check if the central base mesh was loaded successfully
+        if (centralBaseMesh) {
+            // Set the central base mesh as the parent of the windmill's root mesh
             // This makes the windmill's position relative to the base
-            windmillRoot.parent = baseMesh;
+            windmillRoot.parent = centralBaseMesh;
             // Set the windmill's position relative to its parent (the base)
             // (0, 0, 0) places the windmill's origin at the base's origin
             windmillRoot.position = new BABYLON.Vector3(0, 0, 0); 
-            // Safely get the name of the base mesh for logging
-            const meshName = baseMesh ? (baseMesh as any).name || 'unknown' : 'unknown';
+            // Safely get the name of the central base mesh for logging
+            const meshName = centralBaseMesh ? (centralBaseMesh as any).name || 'unknown' : 'unknown';
             console.log(`Windmill parented to ${meshName}. Relative position set to (0,0,0).`);
         } else {
-            // If the base mesh failed to load, log a warning and position the windmill absolutely
-            console.warn("Base mesh not found, cannot parent windmill. Setting absolute position.");
+            // If the central base mesh failed to load, log a warning and position the windmill absolutely
+            console.warn("Central base mesh not found, cannot parent windmill. Setting absolute position.");
             windmillRoot.position = new BABYLON.Vector3(0, 0, 0); // Fallback position
         }
         // Optional: Adjust the scale of the windmill if needed
