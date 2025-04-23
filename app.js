@@ -133,16 +133,43 @@ const createScene = function() {
         // Position and scale the windmill appropriately
         windmill.position = new BABYLON.Vector3(0, 0, 0);
         
-        // We don't rotate the model anymore since we want a fixed view
-        // Optional: animate certain parts of the windmill if needed
-        // For example, if the windmill has blades as separate meshes:
+        // Find the windmill fan mesh and animate it
+        let fanMesh = null;
+        
+        // Log all mesh names to console for debugging
+        console.log("Available meshes in the model:");
         result.meshes.forEach(mesh => {
-            if (mesh.name.includes("blade") || mesh.name.includes("sail")) {
-                scene.registerBeforeRender(() => {
-                    mesh.rotate(BABYLON.Axis.Z, 0.01, BABYLON.Space.LOCAL);
-                });
+            console.log(mesh.name);
+            
+            // Find the fan mesh specifically
+            if (mesh.name.includes("building_windmill_top_fan_blue")) {
+                fanMesh = mesh;
             }
         });
+        
+        // If we found the fan mesh, animate it with a slow rotation on Z axis
+        if (fanMesh) {
+            console.log("Found fan mesh, applying rotation animation");
+            
+            // Apply a slow continuous rotation to the fan
+            const rotationSpeed = 0.005; // Very slow rotation speed
+            scene.registerBeforeRender(() => {
+                fanMesh.rotate(BABYLON.Axis.Z, rotationSpeed, BABYLON.Space.LOCAL);
+            });
+        } else {
+            console.log("Fan mesh not found by exact name, trying alternative search");
+            
+            // If the exact name wasn't found, try to find a mesh that might be the fan
+            result.meshes.forEach(mesh => {
+                if (mesh.name.includes("fan") || mesh.name.includes("blade") || mesh.name.includes("sail")) {
+                    console.log("Found potential fan mesh:", mesh.name);
+                    const rotationSpeed = 0.005; // Very slow rotation speed
+                    scene.registerBeforeRender(() => {
+                        mesh.rotate(BABYLON.Axis.Z, rotationSpeed, BABYLON.Space.LOCAL);
+                    });
+                }
+            });
+        }
         
         console.log("Windmill loaded successfully");
     }).catch(error => {
