@@ -15,29 +15,26 @@ const createScene = function() {
     const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
     dirLight.intensity = 0.5;
     
-    // Create a fixed camera that matches the requested view
-    // Position adjusted to be in front of the windmill
-    const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 3, -12), scene); // Changed Z from 12 to -12
-    camera.setTarget(new BABYLON.Vector3(0, 2, 0)); // Looking at the middle of the windmill
+    // Create ArcRotateCamera
+    const camera = new BABYLON.ArcRotateCamera("camera", Math.PI, Math.PI / 2.5, 15, new BABYLON.Vector3(0, 2, 0), scene);
+    camera.attachControl(canvas, true);
+    camera.lowerRadiusLimit = 5;
+    camera.upperRadiusLimit = 50;
+    camera.wheelPrecision = 0.1;
+    camera.pinchPrecision = 0.01;
+    camera.panningSensibility = 50;
+    camera.inertia = 0.5;
+    camera.target = new BABYLON.Vector3(0, 2, 0);
     
     // Disable camera controls to keep the view fixed
-    camera.attachControl(canvas, false);
+    // camera.attachControl(canvas, false);
     
     // Add a toggle control for changing between fixed view and free navigation
-    let freeCamera = false;
-    let verticalKeys = {};
-    const toggleCameraButton = document.createElement("button");
-    toggleCameraButton.textContent = "Toggle Camera Controls";
-    toggleCameraButton.style.position = "absolute";
-    toggleCameraButton.style.bottom = "10px";
-    toggleCameraButton.style.right = "10px";
-    toggleCameraButton.style.zIndex = "100";
-    toggleCameraButton.style.padding = "10px";
-    toggleCameraButton.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-    toggleCameraButton.style.color = "white";
-    toggleCameraButton.style.border = "none";
-    toggleCameraButton.style.borderRadius = "5px";
-    toggleCameraButton.style.cursor = "pointer";
+    let isFixedView = true;
+    const fixedCameraTarget = new BABYLON.Vector3(0, 2, 0); // Center on the windmill structure
+    const fixedCameraAlpha = Math.PI; // Front view (changed to Math.PI)
+    const fixedCameraBeta = Math.PI / 2.5; // Slightly looking down
+    const fixedCameraRadius = 15; // Distance from target
     
     // Setup scene action manager for keyboard controls
     scene.actionManager = new BABYLON.ActionManager(scene);
@@ -72,7 +69,7 @@ const createScene = function() {
     
     // Handle vertical movement in the render loop when camera is free
     scene.registerBeforeRender(() => {
-        if (freeCamera) {
+        if (!isFixedView) {
             if (verticalKeys[32]) { // Space key for up
                 camera.position.y += 0.1;
             }
@@ -82,29 +79,38 @@ const createScene = function() {
         }
     });
     
+    // Add a toggle button for switching between fixed and free camera views
+    const toggleCameraButton = document.createElement("button");
+    toggleCameraButton.textContent = "Toggle Camera View";
+    toggleCameraButton.style.position = "absolute";
+    toggleCameraButton.style.bottom = "10px";
+    toggleCameraButton.style.right = "10px";
+    toggleCameraButton.style.zIndex = "100";
+    toggleCameraButton.style.padding = "10px";
+    toggleCameraButton.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    toggleCameraButton.style.color = "white";
+    toggleCameraButton.style.border = "none";
+    toggleCameraButton.style.borderRadius = "5px";
+    toggleCameraButton.style.cursor = "pointer";
+    document.body.appendChild(toggleCameraButton);
+    
     toggleCameraButton.onclick = function() {
-        freeCamera = !freeCamera;
+        isFixedView = !isFixedView;
         
-        if (freeCamera) {
+        if (isFixedView) {
+            // Return to fixed view
+            camera.alpha = fixedCameraAlpha;
+            camera.beta = fixedCameraBeta;
+            camera.radius = fixedCameraRadius;
+            camera.target = fixedCameraTarget;
+            camera.attachControl(canvas, false);
+            toggleCameraButton.textContent = "Switch to Free View";
+        } else {
             // Enable free camera controls
             camera.attachControl(canvas, true);
-            // Set up keyboard controls
-            camera.keysUp = [87, 38];       // W and up arrow
-            camera.keysDown = [83, 40];     // S and down arrow
-            camera.keysLeft = [65, 37];     // A and left arrow
-            camera.keysRight = [68, 39];    // D and right arrow
-            camera.speed = 0.5;             // Movement speed
-            camera.inertia = 0.7;           // Camera inertia for smoother movement
             toggleCameraButton.textContent = "Return to Fixed View";
-        } else {
-            // Return to fixed view
-            camera.position = new BABYLON.Vector3(0, 3, -12); // Use the new front-facing position
-            camera.setTarget(new BABYLON.Vector3(0, 2, 0));
-            camera.attachControl(canvas, false);
-            toggleCameraButton.textContent = "Toggle Camera Controls";
         }
     };
-    document.body.appendChild(toggleCameraButton);
     
     // Set up a skybox for better visual context
     const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 1000.0 }, scene);
@@ -116,24 +122,53 @@ const createScene = function() {
     skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     skybox.material = skyboxMaterial;
     
-    // Add ground with hexagonal pattern
-    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 50, height: 50 }, scene);
-    const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+    // Variable to store the base mesh
+    let baseMesh = null;
     
-    // Using a slightly more contrasting ground color
-    groundMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.1);
-    ground.material = groundMaterial;
-    ground.receiveShadows = true;
-    
-    // Load the windmill model
-    BABYLON.SceneLoader.ImportMeshAsync("", "assets/", "building_windmill_blue.gltf", scene).then((result) => {
+    // First, load the hex_grass_bottom.gltf as the base
+    BABYLON.SceneLoader.ImportMeshAsync("", "assets/", "hex_grass_bottom.gltf", scene).then((baseResult) => {
+        // Get the root mesh of the loaded base model
+        baseMesh = baseResult.meshes[0];
+        
+        // Log all base meshes to understand the structure
+        console.log("Base meshes:", baseResult.meshes.map(mesh => mesh.name));
+        
+        // Position and scale the base appropriately
+        // Scale the base first, as it affects bounding box dimensions
+        baseMesh.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
+
+        // --- Manual Positioning (Trial and Error) ---
+        // Try a larger Y offset to lift the base clearly above the ground
+        baseMesh.position = new BABYLON.Vector3(0, 0.3, 0); // Increased Y offset
+
+        console.log("Base model loaded successfully");
+        
+        // Now load the windmill model to place on top of the base
+        return BABYLON.SceneLoader.ImportMeshAsync("", "assets/", "building_windmill_blue.gltf", scene);
+    }).then((result) => {
         // Get the root mesh of the loaded model
         const windmillRoot = result.meshes[0];
         // Get all descendant meshes including the root itself for animation
         const windmillMeshes = [windmillRoot, ...windmillRoot.getChildMeshes(true)];
+        
+        // Log all windmill meshes to understand the structure
+        console.log("Windmill meshes:", result.meshes.map(mesh => mesh.name));
 
-        // Position and scale the windmill appropriately (applied to the root)
-        windmillRoot.position = new BABYLON.Vector3(0, 0, 0);
+        // --- Parenting Approach ---
+        // Set the base mesh as the parent of the windmill root mesh
+        if (baseMesh) {
+            windmillRoot.parent = baseMesh;
+            // Set the windmill's position relative to the parent (base)
+            // (0, 0, 0) means it will be at the base's origin
+            windmillRoot.position = new BABYLON.Vector3(0, 0, 0);
+            console.log(`Windmill parented to ${baseMesh.name}. Relative position set to (0,0,0).`);
+        } else {
+            console.warn("Base mesh not found, cannot parent windmill. Setting absolute position.");
+            // Fallback to absolute positioning if base mesh wasn't loaded correctly
+            windmillRoot.position = new BABYLON.Vector3(0, 0, 0);
+        }
+        // You can also adjust the scale of the windmill if needed
+        // windmillRoot.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
 
         // --- Fan Rotation Logic ---
         let fanMesh = null;
@@ -324,7 +359,7 @@ const createScene = function() {
         console.log("Windmill model loaded and animations set up.");
 
     }).catch((error) => {
-        console.error("Error loading windmill model:", error);
+        console.error("Error loading models:", error);
     });
 
     return scene;
