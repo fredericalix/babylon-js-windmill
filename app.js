@@ -135,6 +135,8 @@ const createScene = function() {
         
         // Find the windmill fan mesh and animate it
         let fanMesh = null;
+        let isRotating = true; // Variable pour contrôler l'animation
+        const rotationSpeed = 0.005; // Very slow rotation speed
         
         // Log all mesh names to console for debugging
         console.log("Available meshes in the model:");
@@ -151,11 +153,44 @@ const createScene = function() {
         if (fanMesh) {
             console.log("Found fan mesh, applying rotation animation");
             
-            // Apply a slow continuous rotation to the fan
-            const rotationSpeed = 0.005; // Very slow rotation speed
-            scene.registerBeforeRender(() => {
-                fanMesh.rotate(BABYLON.Axis.Z, rotationSpeed, BABYLON.Space.LOCAL);
-            });
+            // Create the rotation animation function that checks the rotation state
+            const animateFan = () => {
+                if (isRotating) {
+                    fanMesh.rotate(BABYLON.Axis.Z, rotationSpeed, BABYLON.Space.LOCAL);
+                }
+            };
+            
+            // Register the animation in the render loop
+            scene.registerBeforeRender(animateFan);
+            
+            // Add an instruction text for the fan rotation
+            const instructionText = document.createElement("div");
+            instructionText.textContent = "Press 'R' to toggle fan rotation (ON)";
+            instructionText.style.position = "absolute";
+            instructionText.style.top = "10px";
+            instructionText.style.left = "10px";
+            instructionText.style.zIndex = "100";
+            instructionText.style.padding = "10px";
+            instructionText.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+            instructionText.style.color = "white";
+            instructionText.style.border = "none";
+            instructionText.style.borderRadius = "5px";
+            document.body.appendChild(instructionText);
+            
+            // Register the 'R' key to toggle fan rotation
+            scene.actionManager = new BABYLON.ActionManager(scene);
+            scene.actionManager.registerAction(
+                new BABYLON.ExecuteCodeAction(
+                    { trigger: BABYLON.ActionManager.OnKeyDownTrigger, parameter: 82 }, // 'R' key
+                    function() {
+                        isRotating = !isRotating;
+                        console.log("Fan rotation:", isRotating ? "ON" : "OFF");
+                        
+                        // Update instruction text to show current state
+                        instructionText.textContent = `Press 'R' to toggle fan rotation (${isRotating ? "ON" : "OFF"})`;
+                    }
+                )
+            );
         } else {
             console.log("Fan mesh not found by exact name, trying alternative search");
             
@@ -163,12 +198,51 @@ const createScene = function() {
             result.meshes.forEach(mesh => {
                 if (mesh.name.includes("fan") || mesh.name.includes("blade") || mesh.name.includes("sail")) {
                     console.log("Found potential fan mesh:", mesh.name);
-                    const rotationSpeed = 0.005; // Very slow rotation speed
-                    scene.registerBeforeRender(() => {
-                        mesh.rotate(BABYLON.Axis.Z, rotationSpeed, BABYLON.Space.LOCAL);
-                    });
+                    fanMesh = mesh;
                 }
             });
+            
+            // If we found a fan mesh through the alternative search
+            if (fanMesh) {
+                // Create the rotation animation function that checks the rotation state
+                const animateFan = () => {
+                    if (isRotating) {
+                        fanMesh.rotate(BABYLON.Axis.Z, rotationSpeed, BABYLON.Space.LOCAL);
+                    }
+                };
+                
+                // Register the animation in the render loop
+                scene.registerBeforeRender(animateFan);
+                
+                // Add an instruction text for the fan rotation
+                const instructionText = document.createElement("div");
+                instructionText.textContent = "Press 'R' to toggle fan rotation (ON)";
+                instructionText.style.position = "absolute";
+                instructionText.style.top = "10px";
+                instructionText.style.left = "10px";
+                instructionText.style.zIndex = "100";
+                instructionText.style.padding = "10px";
+                instructionText.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+                instructionText.style.color = "white";
+                instructionText.style.border = "none";
+                instructionText.style.borderRadius = "5px";
+                document.body.appendChild(instructionText);
+                
+                // Register the 'R' key to toggle fan rotation
+                scene.actionManager = new BABYLON.ActionManager(scene);
+                scene.actionManager.registerAction(
+                    new BABYLON.ExecuteCodeAction(
+                        { trigger: BABYLON.ActionManager.OnKeyDownTrigger, parameter: 82 }, // 'R' key
+                        function() {
+                            isRotating = !isRotating;
+                            console.log("Fan rotation:", isRotating ? "ON" : "OFF");
+                            
+                            // Update instruction text to show current state
+                            instructionText.textContent = `Press 'R' to toggle fan rotation (${isRotating ? "ON" : "OFF"})`;
+                        }
+                    )
+                );
+            }
         }
         
         console.log("Windmill loaded successfully");
