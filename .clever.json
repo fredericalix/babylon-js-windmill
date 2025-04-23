@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "app_id": "app_df9869be-bcce-4e6e-be9b-8e4eae7a8e77",
+      "org_id": "user_b9766070-417b-4efb-92a3-1317ac8d9911",
+      "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_df9869be-bcce-4e6e-be9b-8e4eae7a8e77.git",
+      "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_df9869be-bcce-4e6e-be9b-8e4eae7a8e77.git",
+      "name": "demo-babylonjs",
+      "alias": "demo-babylonjs"
+    }
+  ]
+}

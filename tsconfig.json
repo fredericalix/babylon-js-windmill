@@ -1,19 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "lib": ["DOM", "ES2020"],
+    "target": "ESNext",            // Target modern JavaScript features
+    "module": "ESNext",           // Use ES modules
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": false,
-    "noImplicitAny": false,
+    "strict": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "sourceMap": true
+    "moduleResolution": "node",    // Keep Node.js style module resolution
+    "sourceMap": true,           // Generate source maps
+    "isolatedModules": true,     // Required by Vite for single-file transpilation
+    "noEmit": true               // Let Vite handle emitting client files
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"],       // Include all files in src for type checking
+  "exclude": ["node_modules", "dist"] // Exclude build and dependency folders
 }

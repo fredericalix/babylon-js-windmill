@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json", // Inherit settings from the main tsconfig
+  "compilerOptions": {
+    "outDir": "./dist",        // Output directory for the compiled server JS
+    "module": "CommonJS",     // Use CommonJS for Node.js compatibility
+    "noEmit": false,         // Ensure compiler emits JS files (overrides 'noEmit' if set in base)
+    "rootDir": "./src"         // Specify root directory of source files
+  },
+  "include": [
+    "src/server.ts"        // Only include the server file for this compilation
+  ],
+  "exclude": [
+    "node_modules",          // Exclude node_modules
+    "dist",                  // Exclude the output directory
+    "src/app.ts"             // Exclude the client application file
+  ]
+}

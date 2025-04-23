@@ -1,16 +1,20 @@
 {
   "name": "babylon-js-windmill",
   "version": "1.0.0",
-  "description": "A 3D viewer application built with Babylon.js to display a windmill 3D model.",
-  "main": "dist/app.js",
+  "description": "Babylon.js windmill viewer",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack",
-    "watch": "webpack --watch",
-    "start": "npm run build && node dist/server.js",
-    "dev": "concurrently \"npm run watch\" \"node dist/server.js\""
+    "dev": "concurrently \"vite\" \"nodemon --watch src/server.ts --exec ts-node src/server.ts\"",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build": "npm run build:client && npm run build:server",
+    "start": "node dist/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "babylonjs",
+    "typescript"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -25,11 +29,9 @@
     "@types/express": "^5.0.1",
     "@types/node": "^22.14.1",
     "concurrently": "^9.1.2",
-    "ts-loader": "^9.5.2",
+    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
-    "webpack": "^5.99.6",
-    "webpack-cli": "^6.0.1",
-    "webpack-node-externals": "^3.0.0"
+    "vite": "^6.3.2"
   }
 }
