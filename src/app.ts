@@ -1,79 +1,105 @@
-// Import Babylon.js modules
+// Import Babylon.js core modules using the legacy structure for compatibility
 import * as BABYLON from '@babylonjs/core/Legacy/legacy';
+// Import loaders needed for specific model formats (e.g., glTF/GLB)
 import '@babylonjs/loaders';
-// Inspector is optional and only for debugging
+// Optional: Import the Babylon.js Inspector for debugging the scene
 // import '@babylonjs/inspector';
 
-// Initialize BabylonJS engine and scene
-const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
-const engine = new BABYLON.Engine(canvas, true);
+// --- Engine and Scene Setup ---
 
-// Define interface for vertical keys tracking
+// Get the canvas element from the HTML document where the scene will be rendered
+const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
+// Initialize the Babylon.js 3D engine
+const engine = new BABYLON.Engine(canvas, true); // 'true' enables anti-aliasing
+
+// --- Interfaces ---
+
+// Define an interface to track the state (pressed/released) of vertical movement keys
 interface VerticalKeys {
-    [key: number]: boolean;
+    [key: number]: boolean; // Maps key codes (numbers) to boolean states
 }
 
-// Create the scene
+// --- Scene Creation Function ---
+
+// Function to create and configure the Babylon.js scene
 const createScene = function(): BABYLON.Scene {
-    // Create a basic scene
+    // Create a new scene object associated with the engine
     const scene = new BABYLON.Scene(engine);
     
-    // Add primary light to illuminate the scene
+    // --- Lighting Setup ---
+
+    // Add a HemisphericLight: provides ambient lighting from above
     const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-    light.intensity = 0.7;
+    light.intensity = 0.7; // Adjust brightness
     
-    // Add directional light for better shadows
+    // Add a DirectionalLight: simulates light from a specific direction (like the sun)
     const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
-    dirLight.intensity = 0.5;
+    dirLight.intensity = 0.5; // Adjust brightness, contributes to shadows
     
-    // Create ArcRotateCamera
+    // --- Camera Setup ---
+
+    // Create an ArcRotateCamera: allows orbiting, zooming, and panning around a target point
+    // Parameters: name, alpha (horizontal angle), beta (vertical angle), radius (distance), target position, scene
     const camera = new BABYLON.ArcRotateCamera("camera", Math.PI, Math.PI / 2.5, 15, new BABYLON.Vector3(0, 2, 0), scene);
+    // Attach camera controls to the canvas, allowing user interaction (true by default)
     camera.attachControl(canvas, true);
+    // Set limits for zooming in and out
     camera.lowerRadiusLimit = 5;
     camera.upperRadiusLimit = 50;
+    // Adjust sensitivity for mouse wheel (zoom) and touch pinch (zoom)
     camera.wheelPrecision = 0.1;
     camera.pinchPrecision = 0.01;
+    // Adjust sensitivity for panning (moving the camera target)
     camera.panningSensibility = 50;
+    // Add camera inertia for smoother movement after interaction stops
     camera.inertia = 0.5;
+    // Set the initial camera target point (where the camera looks)
     camera.target = new BABYLON.Vector3(0, 2, 0);
     
-    // Disable camera controls to keep the view fixed
+    // Commented out: Initially disable camera controls if a fixed view is desired from the start
     // camera.attachControl(canvas, false);
     
-    // Add a toggle control for changing between fixed view and free navigation
+    // --- Camera View Toggle Logic ---
+
+    // Flag to track if the camera is in fixed view mode or free navigation mode
     let isFixedView = true;
-    const fixedCameraTarget = new BABYLON.Vector3(0, 2, 0); // Center on the windmill structure
-    const fixedCameraAlpha = Math.PI; // Front view (changed to Math.PI)
-    const fixedCameraBeta = Math.PI / 2.5; // Slightly looking down
-    const fixedCameraRadius = 15; // Distance from target
+    // Define the parameters for the fixed camera view
+    const fixedCameraTarget = new BABYLON.Vector3(0, 2, 0); // Target position for the fixed view
+    const fixedCameraAlpha = Math.PI;                     // Horizontal angle for the fixed view (front view)
+    const fixedCameraBeta = Math.PI / 2.5;                   // Vertical angle for the fixed view (slightly looking down)
+    const fixedCameraRadius = 15;                      // Distance from the target for the fixed view
     
-    // Setup scene action manager for keyboard controls
+    // --- Keyboard Input Setup ---
+
+    // Initialize the scene's action manager to handle keyboard events
     scene.actionManager = new BABYLON.ActionManager(scene);
     
-    // Create vertical keys object for tracking key states
+    // Create an object to store the state of vertical movement keys (Space and Shift)
     const verticalKeys: VerticalKeys = {};
     
-    // Space key for moving up
+    // Register action for pressing the Space key (key code 32)
     scene.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(
-            { trigger: BABYLON.ActionManager.OnKeyDownTrigger, parameter: 32 }, // Space key
-            function() { verticalKeys[32] = true; }
+            { trigger: BABYLON.ActionManager.OnKeyDownTrigger, parameter: 32 }, // Trigger on key down, parameter is key code
+            function() { verticalKeys[32] = true; } // Set the key state to true (pressed)
         )
     );
+    // Register action for releasing the Space key
     scene.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(
-            { trigger: BABYLON.ActionManager.OnKeyUpTrigger, parameter: 32 },
-            function() { verticalKeys[32] = false; }
+            { trigger: BABYLON.ActionManager.OnKeyUpTrigger, parameter: 32 },   // Trigger on key up
+            function() { verticalKeys[32] = false; } // Set the key state to false (released)
         )
     );
     
-    // Shift key for moving down
+    // Register action for pressing the Shift key (key code 16)
     scene.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(
-            { trigger: BABYLON.ActionManager.OnKeyDownTrigger, parameter: 16 }, // Shift key
+            { trigger: BABYLON.ActionManager.OnKeyDownTrigger, parameter: 16 },
             function() { verticalKeys[16] = true; }
         )
     );
+    // Register action for releasing the Shift key
     scene.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(
             { trigger: BABYLON.ActionManager.OnKeyUpTrigger, parameter: 16 },
@@ -81,121 +107,156 @@ const createScene = function(): BABYLON.Scene {
         )
     );
     
-    // Handle vertical movement in the render loop when camera is free
+    // --- Vertical Movement Logic ---
+
+    // Register a function to run before each frame is rendered
     scene.registerBeforeRender(() => {
+        // Only allow vertical movement if the camera is in free navigation mode
         if (!isFixedView) {
-            if (verticalKeys[32]) { // Space key for up
-                camera.position.y += 0.1;
+            // If the Space key is pressed, move the camera up
+            if (verticalKeys[32]) {
+                camera.position.y += 0.1; // Adjust speed as needed
             }
-            if (verticalKeys[16]) { // Shift key for down
-                camera.position.y -= 0.1;
+            // If the Shift key is pressed, move the camera down
+            if (verticalKeys[16]) {
+                camera.position.y -= 0.1; // Adjust speed as needed
             }
         }
     });
     
-    // Add a toggle button for switching between fixed and free camera views
+    // --- UI Button for Camera Toggle ---
+
+    // Create an HTML button element to toggle the camera view
     const toggleCameraButton = document.createElement("button");
-    toggleCameraButton.textContent = "Toggle Camera View";
+    toggleCameraButton.textContent = "Toggle Camera View"; // Initial button text
+    // Style the button for visibility
     toggleCameraButton.style.position = "absolute";
     toggleCameraButton.style.bottom = "10px";
     toggleCameraButton.style.right = "10px";
-    toggleCameraButton.style.zIndex = "100";
+    toggleCameraButton.style.zIndex = "100"; // Ensure it's above the canvas
     toggleCameraButton.style.padding = "10px";
     toggleCameraButton.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
     toggleCameraButton.style.color = "white";
     toggleCameraButton.style.border = "none";
     toggleCameraButton.style.borderRadius = "5px";
     toggleCameraButton.style.cursor = "pointer";
+    // Add the button to the HTML document body
     document.body.appendChild(toggleCameraButton);
     
+    // Define the click event handler for the button
     toggleCameraButton.onclick = function() {
+        // Flip the state of the fixed view flag
         isFixedView = !isFixedView;
         
+        // If switching back to fixed view
         if (isFixedView) {
-            // Return to fixed view
+            // Reset camera parameters to the defined fixed view settings
             camera.alpha = fixedCameraAlpha;
             camera.beta = fixedCameraBeta;
             camera.radius = fixedCameraRadius;
             camera.target = fixedCameraTarget;
+            // Detach camera controls to prevent user interaction
             camera.attachControl(canvas, false);
+            // Update button text
             toggleCameraButton.textContent = "Switch to Free View";
-        } else {
-            // Enable free camera controls
+        } else { // If switching to free view
+            // Attach camera controls to allow user interaction
             camera.attachControl(canvas, true);
+            // Update button text
             toggleCameraButton.textContent = "Return to Fixed View";
         }
     };
     
-    // Set up a skybox for better visual context
+    // --- Skybox Setup ---
+
+    // Create a large box to serve as the skybox
     const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 1000.0 }, scene);
+    // Create a standard material for the skybox
     const skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
+    // Ensure the skybox texture is visible from the inside
     skyboxMaterial.backFaceCulling = false;
+    // Load a cube texture for the skybox background
+    // Replace URL with your desired skybox texture
     skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("https://assets.babylonjs.com/skyboxes/skybox", scene);
+    // Set the texture coordinates mode to SKYBOX_MODE for correct mapping
     skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+    // Set diffuse and specular colors to black to avoid unwanted lighting effects on the skybox itself
     skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
     skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+    // Assign the material to the skybox mesh
     skybox.material = skyboxMaterial;
     
-    // Variable to store the base mesh
+    // --- Model Loading and Positioning ---
+
+    // Variable to store the base mesh once loaded
     let baseMesh: BABYLON.AbstractMesh | null = null;
     
-    // First, load the hex_grass_bottom.gltf as the base
+    // Load the base model first (e.g., grass hexagon)
     BABYLON.SceneLoader.ImportMeshAsync("", "assets/", "hex_grass_bottom.gltf", scene).then((baseResult) => {
-        // Get the root mesh of the loaded base model
+        // Assign the first mesh in the result (usually the root) to baseMesh
         baseMesh = baseResult.meshes[0];
         
-        // Log all base meshes to understand the structure
+        // Log the names of all loaded meshes for debugging
         console.log("Base meshes:", baseResult.meshes.map(mesh => mesh.name));
         
-        // Position and scale the base appropriately
-        // Scale the base first, as it affects bounding box dimensions
+        // --- Positioning and Scaling the Base ---
+        // Scale the base mesh (adjust values as needed)
         baseMesh.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
 
-        // --- Manual Positioning (Trial and Error) ---
-        // Try a larger Y offset to lift the base clearly above the ground
-        baseMesh.position = new BABYLON.Vector3(0, 0.3, 0); // Increased Y offset
+        // Position the base mesh
+        // Adjust Y value to raise or lower the base relative to the ground plane (0,0,0)
+        baseMesh.position = new BABYLON.Vector3(0, 0.3, 0); // Example: slightly above ground
 
+        // Log confirmation of base model loading
         console.log("Base model loaded successfully");
         
-        // Now load the windmill model to place on top of the base
+        // Chain the loading of the windmill model after the base is loaded
         return BABYLON.SceneLoader.ImportMeshAsync("", "assets/", "building_windmill_blue.gltf", scene);
-    }).then((result) => {
-        // Get the root mesh of the loaded model
+    }).then((result) => { // This 'then' block executes after the windmill model is loaded
+        // Get the root mesh of the loaded windmill model
         const windmillRoot = result.meshes[0];
-        // Get all descendant meshes including the root itself for animation
+        // Get all descendant meshes for potential manipulation (like animation)
         const windmillMeshes = [windmillRoot, ...windmillRoot.getChildMeshes(true)];
         
-        // Log all windmill meshes to understand the structure
+        // Log the names of all loaded windmill meshes for debugging
         console.log("Windmill meshes:", result.meshes.map(mesh => mesh.name));
 
-        // --- Parenting Approach ---
-        // Set the base mesh as the parent of the windmill root mesh
+        // --- Parenting the Windmill to the Base ---
+        // Check if the base mesh was loaded successfully
         if (baseMesh) {
+            // Set the base mesh as the parent of the windmill's root mesh
+            // This makes the windmill's position relative to the base
             windmillRoot.parent = baseMesh;
-            // Set the windmill's position relative to the parent (base)
-            // (0, 0, 0) means it will be at the base's origin
-            windmillRoot.position = new BABYLON.Vector3(0, 0, 0);
-            // Access name property safely with type assertion
+            // Set the windmill's position relative to its parent (the base)
+            // (0, 0, 0) places the windmill's origin at the base's origin
+            windmillRoot.position = new BABYLON.Vector3(0, 0, 0); 
+            // Safely get the name of the base mesh for logging
             const meshName = baseMesh ? (baseMesh as any).name || 'unknown' : 'unknown';
             console.log(`Windmill parented to ${meshName}. Relative position set to (0,0,0).`);
         } else {
+            // If the base mesh failed to load, log a warning and position the windmill absolutely
             console.warn("Base mesh not found, cannot parent windmill. Setting absolute position.");
-            // Fallback to absolute positioning if base mesh wasn't loaded correctly
-            windmillRoot.position = new BABYLON.Vector3(0, 0, 0);
+            windmillRoot.position = new BABYLON.Vector3(0, 0, 0); // Fallback position
         }
-        // You can also adjust the scale of the windmill if needed
+        // Optional: Adjust the scale of the windmill if needed
         // windmillRoot.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
 
         // --- Fan Rotation Logic ---
+        // Variable to store the fan mesh once found
         let fanMesh: BABYLON.AbstractMesh | null = null;
-        let isRotating = true; // Variable to control rotation state
+        // Flag to control whether the fan is currently rotating
+        let isRotating = true; 
+        // Speed of the fan rotation (radians per frame)
         const rotationSpeed = 0.005;
 
-        // Find the fan mesh by iterating through the loaded meshes directly
+        // Find the specific mesh representing the fan blades
+        // Iterate through all meshes loaded with the windmill model
         result.meshes.forEach(mesh => {
-            // Safe way to check mesh name in TypeScript
+            // Safely access the mesh name (some meshes might not have one)
             const meshName = (mesh as any).name || '';
+            // Check if the mesh name contains the identifier for the fan part
             if (typeof meshName === 'string' && meshName.includes("building_windmill_top_fan_blue")) {
+                // Assign the found mesh to the fanMesh variable
                 fanMesh = mesh;
             }
         });
