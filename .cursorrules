@@ -1,0 +1,212 @@
+# Babylon.js Windmill Project - Development Guidelines
+
+## 🎯 Project Overview
+This is a 3D web application using Babylon.js to display and interact with a windmill model on a hexagonal island. The project should follow modern web development best practices with a focus on maintainability, performance, and user experience.
+
+## 🌍 Language Requirements
+- **ALL code, comments, and documentation MUST be written in English**
+- Use clear, descriptive names that explain the purpose
+- Avoid abbreviations unless they are well-known (e.g., DOM, API, 3D)
+
+## 🏗️ Architecture Principles
+
+### Single Responsibility Principle (SRP)
+Every module, class, and function should have ONE clear responsibility:
+- **Modules**: One feature or domain per module
+- **Classes**: One concept per class
+- **Functions**: One task per function, max 20-30 lines
+- **Files**: One main export per file
+
+### Project Structure
+```
+src/
+├── core/              # Core engine and scene management
+│   ├── Engine.ts      # Babylon.js engine initialization
+│   ├── Scene.ts       # Scene setup and configuration
+│   └── Camera.ts      # Camera controls and management
+├── models/            # 3D model loading and management
+│   ├── ModelLoader.ts # Generic model loading utilities
+│   ├── Windmill.ts    # Windmill-specific logic
+│   └── Terrain.ts     # Hexagonal terrain management
+├── controls/          # User input and interactions
+│   ├── KeyboardControls.ts
+│   ├── MouseControls.ts
+│   └── UIControls.ts
+├── animations/        # Animation systems
+│   ├── FanRotation.ts
+│   └── Construction.ts
+├── utils/             # Utility functions
+│   ├── hexGrid.ts     # Hexagonal grid calculations
+│   └── logger.ts      # Logging utilities
+└── app.ts            # Application entry point
+```
+
+## 📝 Code Style Guidelines
+
+### TypeScript Best Practices
+```typescript
+// ✅ Good: Clear interface with single responsibility
+interface WindmillConfig {
+  position: Vector3;
+  scale: number;
+  rotationSpeed: number;
+}
+
+// ✅ Good: Single responsibility class
+class WindmillController {
+  private mesh: AbstractMesh;
+  private isRotating: boolean = false;
+  
+  constructor(private config: WindmillConfig) {}
+  
+  public startRotation(): void {
+    this.isRotating = true;
+  }
+  
+  public stopRotation(): void {
+    this.isRotating = false;
+  }
+}
+
+// ❌ Bad: Multiple responsibilities in one class
+class WindmillAndTerrainAndCamera {
+  // Too many responsibilities!
+}
+```
+
+### Babylon.js Specific Guidelines
+1. **Scene Management**
+   - Separate scene creation from model loading
+   - Use async/await for all asset loading
+   - Implement proper disposal methods
+
+2. **Performance Optimization**
+   - Use instanced meshes for repeated objects
+   - Implement LOD (Level of Detail) for complex models
+   - Optimize texture sizes and formats
+   - Use mesh merging for static geometry
+
+3. **Asset Loading**
+   ```typescript
+   // ✅ Good: Proper async loading with error handling
+   async function loadWindmill(scene: Scene): Promise<WindmillModel> {
+     try {
+       const result = await SceneLoader.ImportMeshAsync(
+         "",
+         "assets/",
+         "building_windmill_blue.gltf",
+         scene
+       );
+       return new WindmillModel(result.meshes);
+     } catch (error) {
+       logger.error("Failed to load windmill model", error);
+       throw new ModelLoadError("Windmill loading failed");
+     }
+   }
+   ```
+
+## 🧪 Testing Requirements
+- Write unit tests for utility functions
+- Integration tests for model loading
+- E2E tests for user interactions
+- Minimum 80% code coverage
+
+## 📚 Documentation Standards
+```typescript
+/**
+ * Calculates the position of a hexagon in a hexagonal grid
+ * @param q - The column coordinate in axial system
+ * @param r - The row coordinate in axial system
+ * @param size - The size of each hexagon
+ * @param height - The vertical offset from ground
+ * @returns The 3D position vector for the hexagon
+ * @see https://www.redblobgames.com/grids/hexagons/
+ */
+function getHexPosition(q: number, r: number, size: number, height: number): Vector3 {
+  // Implementation
+}
+```
+
+## 🔄 Basic Memory Integration
+- **Regular updates**: Update the basic-memory project documentation after each significant change
+- **Decision tracking**: Document all architectural decisions in ADR format
+- **Knowledge capture**: Store implementation insights and lessons learned
+
+### Update Schedule
+- Daily: Quick notes on progress and blockers
+- Weekly: Architecture decisions and design changes
+- Per feature: Complete documentation of new features
+
+## 🎮 3D Application Best Practices
+
+### Camera Controls
+- Implement smooth camera movements with inertia
+- Provide both keyboard and mouse controls
+- Add boundary limits to prevent disorientation
+- Include reset view functionality
+
+### User Feedback
+- Visual indicators for interactive elements
+- Smooth transitions for all animations
+- Loading indicators for asset loading
+- Error messages for failed operations
+
+### Mobile Optimization
+- Touch controls for camera movement
+- Responsive UI elements
+- Performance scaling based on device capabilities
+- Reduced polygon count for mobile devices
+
+## 🚀 Performance Guidelines
+1. **Rendering Optimization**
+   - Use frustum culling
+   - Implement occlusion culling for complex scenes
+   - Batch draw calls where possible
+   - Use texture atlases
+
+2. **Memory Management**
+   - Dispose of unused meshes and textures
+   - Implement resource pooling for frequently created objects
+   - Monitor memory usage in development
+
+3. **Animation Performance**
+   - Use GPU-based animations where possible
+   - Limit the number of concurrent animations
+   - Implement animation LOD
+
+## 🛠️ Development Workflow
+1. **Before coding**: Check basic-memory for existing patterns and decisions
+2. **During coding**: Follow SRP and create small, focused commits
+3. **After coding**: Update documentation and basic-memory notes
+4. **Code review**: Verify SRP compliance and English documentation
+
+## 📋 Commit Message Format
+```
+feat(windmill): Add fan rotation control
+- Implement keyboard toggle for fan rotation
+- Add visual feedback for rotation state
+- Update control instructions in UI
+
+Closes #123
+```
+
+## 🎯 Project-Specific Rules
+1. **Hexagonal Grid**: All terrain calculations must use the axial coordinate system
+2. **Asset Pipeline**: All 3D models must be optimized before inclusion (max 100k polygons)
+3. **Animations**: All animations must be interruptible and reversible
+4. **Controls**: All controls must work with both keyboard and UI buttons
+
+## 🔍 Code Review Checklist
+- [ ] All code and comments are in English
+- [ ] Each file has a single, clear responsibility
+- [ ] Functions are under 30 lines
+- [ ] Proper error handling is implemented
+- [ ] Performance implications are considered
+- [ ] Documentation is complete and clear
+- [ ] Basic-memory is updated if needed
+
+## 📚 Recommended Resources
+- [Babylon.js Best Practices](https://doc.babylonjs.com/guidedLearning/practicaltips)
+- [Red Blob Games - Hexagonal Grids](https://www.redblobgames.com/grids/hexagons/)
+- [Clean Code Principles](https://github.com/ryanmcdermott/clean-code-javascript)
+- [TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) 
