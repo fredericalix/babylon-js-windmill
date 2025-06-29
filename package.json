@@ -4,7 +4,8 @@
   "description": "Babylon.js windmill viewer",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"nodemon --watch src/server.ts --exec ts-node src/server.ts\"",
+    "dev": "vite",
+    "dev:full": "concurrently \"vite\" \"nodemon --watch src/server.ts --exec ts-node src/server.ts\"",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",

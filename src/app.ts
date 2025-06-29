@@ -50,7 +50,7 @@ class WindmillApp {
   public async init(): Promise<void> {
     try {
       // Set logger level
-      logger.setLevel(LogLevel.DEBUG);
+      logger.setLevel(LogLevel.INFO);
 
       // Show loading indicator
       this.uiControls = new UIControls();

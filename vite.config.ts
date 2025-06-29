@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  publicDir: 'assets', // Copy contents of 'assets' folder to build output root
+  publicDir: false, // Disable automatic public directory copying
+  assetsInclude: ['**/*.gltf', '**/*.bin'],
   build: {
     outDir: 'dist/client', // Output directory for client build
     sourcemap: true, // Generate source maps for debugging
@@ -16,6 +17,10 @@ export default defineConfig({
   },
   server: {
     port: 3000, // Port for the Vite development server (frontend only)
-    open: true // Automatically open the browser
+    open: true, // Automatically open the browser
+    fs: {
+      // Allow serving files from one level up to the project root
+      allow: ['..']
+    }
   },
 });
