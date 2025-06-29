@@ -47,11 +47,20 @@ export class Windmill {
       // Get the root mesh
       this.rootMesh = meshes[0];
       
-      // Get all child meshes
-      this.allMeshes = getAllChildMeshes(this.rootMesh);
+      // Store all imported meshes (not just children of root)
+      this.allMeshes = meshes;
       
-      // Find the fan mesh
-      this.fanMesh = findMeshByName(meshes, "building_windmill_top_fan_blue");
+      // Log all mesh names for debugging
+      logger.debug('All windmill meshes:');
+      this.allMeshes.forEach(mesh => {
+        logger.debug(`  - ${(mesh as any).name || 'unnamed'}`);
+      });
+      
+      // Find the fan mesh in all imported meshes
+      // Try different patterns as the name might vary
+      this.fanMesh = findMeshByName(this.allMeshes, "fan") || 
+                     findMeshByName(this.allMeshes, "building_windmill_top_fan") ||
+                     findMeshByName(this.allMeshes, "building_windmill_top_fan_blue");
       
       if (!this.fanMesh) {
         logger.warn('Fan mesh not found in windmill model');
@@ -157,6 +166,14 @@ export class Windmill {
    */
   public getRootMesh(): BABYLON.AbstractMesh | null {
     return this.rootMesh;
+  }
+
+  /**
+   * Get the fan mesh
+   * @returns The fan mesh or null
+   */
+  public getFanMesh(): BABYLON.AbstractMesh | null {
+    return this.fanMesh;
   }
 
   /**

@@ -50,7 +50,7 @@ class WindmillApp {
   public async init(): Promise<void> {
     try {
       // Set logger level
-      logger.setLevel(LogLevel.INFO);
+      logger.setLevel(LogLevel.DEBUG);
 
       // Show loading indicator
       this.uiControls = new UIControls();
@@ -173,11 +173,13 @@ class WindmillApp {
    */
   private setupAnimations(): void {
     // Fan rotation animation
-    const fanMesh = this.windmill.getAllMeshes().find(mesh => 
-      (mesh as any).name?.includes("building_windmill_top_fan_blue")
-    );
+    const fanMesh = this.windmill.getFanMesh();
     
-    this.fanRotation = new FanRotation(fanMesh || null, 0.005);
+    if (!fanMesh) {
+      logger.warn('Fan mesh not found, rotation will not work');
+    }
+    
+    this.fanRotation = new FanRotation(fanMesh, 0.005);
     
     // Update fan rotation each frame
     this.sceneManager.registerAfterRender(() => {

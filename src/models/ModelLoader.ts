@@ -77,10 +77,13 @@ export function findMeshByName(
   meshes: BABYLON.AbstractMesh[],
   namePattern: string
 ): BABYLON.AbstractMesh | null {
+  logger.debug(`Searching for mesh with pattern: ${namePattern} in ${meshes.length} meshes`);
+  
   for (const mesh of meshes) {
     const meshName = (mesh as any).name || '';
+    logger.debug(`Checking mesh: ${meshName}`);
     if (typeof meshName === 'string' && meshName.includes(namePattern)) {
-      logger.debug(`Found mesh: ${meshName}`);
+      logger.info(`Found mesh: ${meshName}`);
       return mesh;
     }
   }
